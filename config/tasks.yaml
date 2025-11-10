@@ -1,0 +1,326 @@
+# tasks.yaml
+# Complete financial analysis pipeline for CrewAI
+
+document_ingestion_and_analysis_task:
+  description: |
+    Use the **pdf_ingestion_tool** to read the uploaded document at `{document_path}`.
+    Then, perform the initial extraction and summarization using the **investment_tool** with the provided `{initial_analysis_query}`.
+    
+    Your goal is to:
+    - Parse the PDF into structured text and tables.
+    - Ingest the content into vector storage.
+    - Extract the Executive Summary, Key Financial Highlights, and Management Discussion.
+
+  expected_output: |
+    A markdown-formatted summary of the document’s structure, financial highlights, and management commentary.
+  agent: financial_analyst
+  tools:
+    - pdf_ingestion_tool
+    - investment_tool
+  async_execution: false
+  output_pydantic: RiskRecommendation
+
+
+detailed_financial_analysis_task:
+  description: |
+    Perform a **deep, structured analysis** of the ingested financial data from `{document_path}`.
+    Specifically analyze:
+    - Year-over-year or quarter-over-quarter trends.
+    - Revenue growth across major segments (Automotive, Energy, etc.).
+    - Profitability ratios (Gross Margin, Operating Margin).
+    - Free Cash Flow and CapEx changes.
+    
+    Use the **calculator_tool** for ratio computations and quantitative trend summaries.
+
+  expected_output: |
+    A detailed comparative report with trends, ratios, and performance tables.
+  agent: financial_analyst
+  tools:
+    - calculator_tool
+    - investment_tool
+  async_execution: false
+  context:
+    - document_ingestion_and_analysis_task
+  output_pydantic: RiskRecommendation
+
+
+extreme_risk_assessment_task:
+  description: |
+    Using the **risk_assessment_tool**, analyze the processed document for all major risk factors.
+    Categorize findings into:
+    - **Financial Risks:** liquidity, leverage, exposure.
+    - **Operational Risks:** supply chain, production, cost volatility.
+    - **Market Risks:** competition, macro trends, regulations.
+
+    Optionally use **collection_stats_tool** to retrieve supporting vector DB stats for context.
+
+  expected_output: |
+    A structured risk matrix (markdown format) listing categories, severity, and potential impact.
+  agent: risk_assessor
+  tools:
+    - risk_assessment_tool
+    - collection_stats_tool
+  async_execution: false
+  context:
+    - document_ingestion_and_analysis_task
+    - detailed_financial_analysis_task
+  output_pydantic: RiskRecommendation
+
+
+risk_tolerance_verification_task:
+  description: |
+    Evaluate the **financial and risk outputs** from the previous tasks to check alignment
+    with a **moderate-to-high technology sector risk tolerance** profile.
+    
+    Use the **risk_assessment_tool** and **calculator_tool** to:
+    - Quantify exposure-to-reward ratios.
+    - Evaluate consistency across financial and risk results.
+    - Issue a clear recommendation: **Accept**, **Reject**, or **Modify**, with justification.
+
+  expected_output: |
+    A formal risk verification summary including:
+    - Recommendation status (Accept/Reject/Modify)
+    - Quantitative justification (ratios, scores)
+    - Confidence level (High/Medium/Low)
+  agent: verifier
+  tools:
+    - risk_assessment_tool
+    - calculator_tool
+  async_execution: false
+  context:
+    - detailed_financial_analysis_task
+    - extreme_risk_assessment_task
+    - document_ingestion_and_analysis_task
+  output_pydantic: RiskRecommendation
+
+
+optimal_trade_strategy_task:
+  description: |
+    Synthesize insights from verified financials and risk reports into a final **trade strategy**.
+    
+    Use **investment_tool** and **calculator_tool** to:
+    - Formulate entry and exit conditions.
+    - Suggest trade duration (short-term / long-term).
+    - Recommend hedging or diversification approaches.
+    - Justify your recommendation quantitatively.
+
+  expected_output: |
+    A comprehensive investment thesis and trade execution plan.
+    Include: entry price, exit condition, risk controls, and confidence level.
+  agent: investment_advisor
+  tools:
+    - investment_tool
+    - calculator_tool
+  async_execution: false
+  context:
+    - risk_tolerance_verification_task
+    - document_ingestion_and_analysis_task
+  output_pydantic: RiskRecommendation
+
+
+validate_investment_risk:
+  description: |
+    Perform a final validation step to ensure consistency between investment recommendation
+    and overall risk profile before execution.
+    Cross-verify using both **investment_tool** and **risk_assessment_tool**.
+
+  expected_output: |
+    Validation Report:
+    - Summary of consistency checks
+    - Risk-weighted decision
+    - Final Confidence Level
+
+  agent: verifier
+  tools:
+    - investment_tool
+    - risk_assessment_tool
+  async_execution: false
+  context:
+    - optimal_trade_strategy_task
+    - risk_tolerance_verification_task
+  output_pydantic: RiskRecommendation
+
+
+#document_ingestion_and_analysis_task:
+#  description: |
+#    You MUST execute the 'pdf_ingestion_tool' with the following exact input string, using the two dynamic variables provided at runtime:
+#    **INPUT STRING:** `{document_path}, {initial_analysis_query}`
+#
+#    The goal is to read the uploaded PDF, extract text/tables, ingest into vector storage,
+#    and then run analysis to extract the Executive Summary, Key Financial Highlights,
+#    and Management Discussion.
+#  expected_output: |
+#    A structured summary (markdown format) of the document's key financial highlights and management's operational commentary.
+#  agent: financial_analyst
+#  tools:
+#    - pdf_ingestion_tool
+#  async_execution: false
+#
+#
+#
+#detailed_financial_analysis_task:
+#  description: |
+#    Perform a deep analysis on the stored data from {document_path}.
+#    Extract and analyze year-over-year or quarter-over-quarter trends for:
+#    1. **Revenue** and its major drivers (e.g., Automotive vs. Energy).
+#    2. **Profitability Ratios** (e.g., Gross Margin, Operating Margin).
+#    3. **Free Cash Flow** and changes in capital expenditure.
+#    Present the final output as a comparison table or a highly structured bulleted list.
+#  expected_output: |
+#    A detailed, comparative report on key financial metrics, trends, and growth/profitability assessment.
+#  agent: financial_analyst
+#  # No explicit tools needed here, as the agent is expected to use its assigned tools (Investment_Analysis_Tool) implicitly for querying.
+#  async_execution: false
+#  context:
+#    - document_ingestion_and_analysis_task
+#  output_pydantic: RiskRecommendation
+#
+#
+#
+#extreme_risk_assessment_task:
+#  description: |
+#    Use the Risk_Assessment_Tool to query the document data for all explicit and implicit risk factors mentioned (e.g., in the 'Risk Factors' section or forward-looking statements).
+#    Categorize and detail the risks into three groups: Financial Risks (debt/liquidity), Operational Risks (production/supply chain), and Market Risks (competition/regulatory).
+#  expected_output: |
+#    A comprehensive, categorized report detailing the extreme risks associated with the company, highlighting the top 3 most significant risks and their potential impact.
+#  agent: risk_assessor
+#  tools:
+#    - risk_assessment_tool
+#  async_execution: false
+#  context:
+#    - detailed_financial_analysis_task
+#    - document_ingestion_and_analysis_task
+#  output_pydantic: RiskRecommendation
+#
+#
+#risk_tolerance_verification_task:
+#  description: |
+#    Scrutinize the detailed financial analysis and the extreme risk assessment.
+#    Evaluate whether the identified risks and financial health (from the previous tasks' outputs) align with a predefined **high-growth technology sector risk tolerance** (assume a moderate-to-high risk appetite).
+#    Provide a clear, final recommendation for the overall analysis (e.g., **Accept**, **Reject**, or **Modify**) with concise rationale. Use the Risk_Assessment_Tool to run a final check on any critical uncertainties.
+#  expected_output: |
+#    A formal verification statement: 'Recommendation: [Accept/Reject/Modify]' followed by a brief, quantitative justification.
+#  agent: verifier
+#  tools:
+#    - risk_assessment_tool
+#  async_execution: false
+#  context:
+#    - detailed_financial_analysis_task
+#    - extreme_risk_assessment_task
+#    - document_ingestion_and_analysis_task
+#  output_pydantic: RiskRecommendation
+#
+#
+#optimal_trade_strategy_task:
+#  description: |
+#    Synthesize the accepted financial metrics, the verified risk profile, and the operational outlook.
+#    Suggest the optimal **trade execution strategy** (e.g., Long-Term Buy, Short-Term Option, or Hedging Strategy).
+#    Your recommendation must include suggested entry/exit criteria and a justification based on maximizing efficiency and minimizing unforeseen risk. Use both the Investment and Risk tools for final context checks.
+#  expected_output: |
+#    A detailed Investment Thesis and a final, actionable trade execution strategy recommendation.
+#  agent: investment_advisor
+#  tools:
+#    - investment_tool
+#    - risk_assessment_tool
+#  async_execution: false
+#  context:
+#    - risk_tolerance_verification_task
+#    - document_ingestion_and_analysis_task
+#
+#  output_pydantic: RiskRecommendation
+#
+#
+#validate_investment_risk:
+#    agent: verifier
+#    description: >
+#      Evaluate risk profile of proposed investment recommendation.
+#    expected_output: |
+#      The output must follow the RiskRecommendation model
+#    tools:
+#      - investment_tool
+#      - risk_assessment_tool
+#      - document_ingestion_and_analysis_task
+#    output_pydantic: RiskRecommendation
+#
+#
+#
+## Note: The above tasks form a sequential crew.
+## document_ingestion_and_analysis_task >> detailed_financial_analysis_task >> extreme_risk_assessment_task >> risk_tolerance_verification_task >> optimal_trade_strategy_task
+#
+##
+### document_reading_task: Assigned to financial_analyst (The document ingestor/analyst)
+##document_reading_task = Task(
+##    description=(
+##        "Read and extract key information from the uploaded company document at {document_path}. "
+##        "Focus on: "
+##        "1. Executive summary and management discussion "
+##        "2. Key financial highlights "
+##        "3. Major sections and their content "
+##        "4. Important dates and periods covered "
+##        "5. Any forward-looking statements"
+##    ),
+##    expected_output="A comprehensive summary of the document's structure and key content.",
+##    tools=[investment_tool]
+##    agent=financial_analyst # Corrected agent assignment
+##)
+##
+### financial_analysis_task: Assigned to financial_analyst (The core analyst)
+##financial_analysis_task = Task(
+##    description=(
+##        "Conduct detailed financial analysis of the company document at {document_path}. "
+##        "Analyze: "
+##        "1. Financial statements (balance sheet, income statement, cash flow) "
+##        "2. Key financial ratios and trends "
+##        "3. Profitability and growth metrics "
+##        "4. Liquidity and solvency positions "
+##        "5. Comparative performance analysis"
+##    ),
+##    expected_output="Detailed financial analysis with ratios, trends, and performance assessment.",
+##    agent=financial_analyst # Corrected agent assignment
+##)
+##
+### risk_assessment_task: Assigned to risk_assessor (The risk expert)
+##risk_assessment_task = Task(
+##    description=(
+##        "Perform comprehensive risk assessment of the company based on document at {document_path}. "
+##        "Evaluate: "
+##        "1. Financial risks (debt, liquidity, market exposure) "
+##        "2. Operational risks "
+##        "3. Market and competitive risks "
+##        "4. Regulatory and compliance risks "
+##        "5. Risk mitigation strategies mentioned"
+##    ),
+##    expected_output="Risk assessment report identifying and categorizing various risks.",
+##    agent=risk_assessor # Corrected agent assignment
+##)
+##
+### compliance_verification_task: Assigned to verifier (The scrutiny/compliance check)
+##compliance_verification_task = Task(
+##    description=(
+##        "Verify regulatory compliance and accounting standards in document at {document_path}. "
+##        "Check: "
+##        "1. Adherence to accounting standards (GAAP/IFRS) "
+##        "2. SEC filing compliance (if applicable) "
+##        "3. Auditor opinions and notes "
+##        "4. Disclosure completeness "
+##        "5. Any restatements or qualifications"
+##    ),
+##    expected_output="Compliance verification report with any identified issues.",
+##    agent=verifier # Corrected agent assignment
+##)
+##
+### report_generation_task: Assigned to investment_advisor (The final strategic synthesis)
+##report_generation_task = Task(
+##    description=(
+##        "Create a comprehensive financial document analysis report combining insights from all analyses. "
+##        "Include: "
+##        "1. Executive summary "
+##        "2. Financial performance overview "
+##        "3. Risk assessment summary "
+##        "4. Compliance status "
+##        "5. Key findings and recommendations "
+##        "6. Overall assessment"
+##    ),
+##    expected_output="Professional financial document analysis report in markdown format.",
+##    agent=investment_advisor # Corrected agent assignment
+##)
