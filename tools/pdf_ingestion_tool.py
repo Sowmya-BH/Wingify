@@ -1,8 +1,12 @@
-# src/financial_document_analyzer/tools/pdf_ingestion_tool.py
+# src/financial_document_analyzer_sub/tools/pdf_ingestion_tool.py
 
-from crewai_tools import FileReadTool
+# from crewai_tools import FileReadTool
 from crewai.tools import BaseTool
+
+from langchain_community.tools.file_management.read import ReadFileTool
+
 import os
+
 
 class PDFIngestionTool(BaseTool):
     """
@@ -23,8 +27,8 @@ class PDFIngestionTool(BaseTool):
             if not os.path.exists(pdf_path):
                 return f"Error: File not found at path: {pdf_path}"
 
-            file_reader = FileReadTool(file_path=pdf_path)
-            content = file_reader.run()
+            reader = ReadFileTool(file_path=pdf_path)
+            content = reader.run()
 
             if not content:
                 return "Error: No readable content extracted from the file."
